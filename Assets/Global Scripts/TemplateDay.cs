@@ -7,7 +7,6 @@ public class Template : MonoBehaviour
     private void Part1()
     {
 
-
     }
 
     private void Part2()

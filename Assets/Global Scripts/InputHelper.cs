@@ -65,4 +65,19 @@ public class InputHelper
         }
         return input;
     }
+
+    public static char[][] ParseInputCharArrayNoTrim(int day)
+    {
+        string path = $"{Application.dataPath}/Days/Day {day}/Input/input.txt";
+        char[][] input;
+        try
+        {
+            input = File.ReadAllLines(path).Select(line => line.ToCharArray()).ToArray();
+        }
+        catch (System.Exception e)
+        {
+            throw e;
+        }
+        return input;
+    }
 }
