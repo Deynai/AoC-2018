@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 107c98022e7c2da4f9d78f5b46c7124d, type: 3}
+  m_Name: CircleWorms
+  m_EditorClassIdentifier: 
+  stepsPerFrame: 10
+  width: 1280
+  height: 720
+  numAgents: 10000
+  spawnMode: 4
+  trailWeight: 1.5
+  decayRate: 0.01
+  diffuseRate: 0.18
+  moveSpeed: 3.71
+  turnSpeed: 1.1
+  sensorAngleSpacing: 119.9
+  sensorOffsetDistance: 45.8
+  sensorSize: 5

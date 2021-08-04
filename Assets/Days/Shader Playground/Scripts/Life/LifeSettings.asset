@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bedc95eb95bebf44babcc20131c3e941, type: 3}
+  m_Name: LifeSettings
+  m_EditorClassIdentifier: 
+  stepsPerFrame: 1
+  width: 1920
+  height: 1080
+  noiseOffset: {x: 0, y: 0}
+  maxRadius: 16
+  fixedSeed: 407927232
+  useFixedSeed: 1
+  rules:
+  - radiusMinMax: {x: 1, y: 4}
+    aliveMinMax: {x: 0.42185006, y: 0.92478526}
+    deadMinMax: {x: 0.31602523, y: 0.88977927}
+  - radiusMinMax: {x: 3, y: 5}
+    aliveMinMax: {x: 0.12963203, y: 0.8318631}
+    deadMinMax: {x: 0.07186956, y: 0.28497195}
+  - radiusMinMax: {x: 3, y: 6}
+    aliveMinMax: {x: 0.5815194, y: 0.6443681}
+    deadMinMax: {x: 0.32244876, y: 0.79185647}
+  - radiusMinMax: {x: 3, y: 7}
+    aliveMinMax: {x: 0.6881902, y: 0.78809845}
+    deadMinMax: {x: 0.060447242, y: 0.5967965}
+  - radiusMinMax: {x: 1, y: 10}
+    aliveMinMax: {x: 0.61192, y: 0.782965}
+    deadMinMax: {x: 0.44773594, y: 0.6832691}
+  - radiusMinMax: {x: 4, y: 7}
+    aliveMinMax: {x: 0.040006988, y: 0.8485332}
+    deadMinMax: {x: 0.029454153, y: 0.9260053}
+  - radiusMinMax: {x: 9, y: 12}
+    aliveMinMax: {x: 0.12997846, y: 0.5381758}
+    deadMinMax: {x: 0.60296345, y: 0.7731288}
+  - radiusMinMax: {x: 3, y: 13}
+    aliveMinMax: {x: 0.37940466, y: 0.85912913}
+    deadMinMax: {x: 0.5492395, y: 0.57903326}
+  numRules: 8
+  colourR: {r: 0, g: 0.9528302, b: 0.90311736, a: 0}

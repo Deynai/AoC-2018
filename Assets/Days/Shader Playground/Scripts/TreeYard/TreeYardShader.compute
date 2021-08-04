@@ -1,0 +1,169 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel Update
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+
+RWStructuredBuffer<float2> trees;
+uint treesLength;
+RWStructuredBuffer<float2> yards;
+uint yardsLength;
+
+RWTexture2D<float4> State;
+RWTexture2D<float4> CopyState;
+float width;
+float height;
+float3 openRequirements;
+float3 treeRequirements;
+float3 yardRequirements;
+int radiusNeighbourhood;
+
+bool OutOfBounds(uint3 pos) {
+    if (pos.x < 0 || pos.x >= (uint)width || pos.y < 0 || pos.y >= (uint)height) {
+        return true;
+    }
+    return false;
+}
+
+[numthreads(8, 8, 1)]
+void Update(uint3 id : SV_DispatchThreadID)
+{
+    if (OutOfBounds(id)) {
+        return;
+    }
+
+    float4 currentColour = State[id.xy];
+    float4 sum = 0;
+
+    for (int offsetX = -radiusNeighbourhood; offsetX <= radiusNeighbourhood; offsetX++) {
+        for (int offsetY = -radiusNeighbourhood; offsetY <= radiusNeighbourhood; offsetY++) {
+            if (offsetX == 0 && offsetY == 0) { continue; }
+            int sampleX = id.x + offsetX;
+            int sampleY = id.y + offsetY;
+            uint3 samplePos = uint3(sampleX, sampleY, 0);
+            if (OutOfBounds(samplePos)) { continue; }
+
+            sum += State[int2(sampleX, sampleY)];
+        }
+    }
+
+    // Explicit Day18 Logic
+    if (currentColour.x == 1) {
+        if (sum.x >= openRequirements.x && sum.y >= openRequirements.y && sum.z >= openRequirements.z) {
+            CopyState[id.xy] = float4(0, 1, 0, 0);
+        }
+        else {
+            CopyState[id.xy] = float4(1, 0, 0, 0);
+        }
+    }
+
+    else if (currentColour.y == 1) {
+        if (sum.x >= treeRequirements.x && sum.y >= treeRequirements.y && sum.z >= treeRequirements.z) {
+            CopyState[id.xy] = float4(0, 0, 1, 0);
+        }
+        else {
+            CopyState[id.xy] = float4(0, 1, 0, 0);
+        }
+    }
+
+    else if (currentColour.z == 1) {
+        if (sum.x >= yardRequirements.x && sum.y >= yardRequirements.y && sum.z >= yardRequirements.z) {
+            CopyState[id.xy] = float4(0, 0, 1, 0);
+        }
+        else {
+            CopyState[id.xy] = float4(1, 0, 0, 0);;
+        }
+    }
+    //--------
+}
+
+# pragma kernel Init
+
+[numthreads(16, 1, 1)]
+void Init(uint3 id : SV_DispatchThreadID) {
+
+    if (id.x >= treesLength && id.x >= yardsLength) {
+        return;
+    }
+    if (id.x < treesLength) {
+        float2 tree = trees[id.x] + float2(width / 2 - 25, height / 2 - 25);
+        State[int2(tree)] = float4(0, 1, 0, 0);
+    }
+    if (id.x < yardsLength) {
+        float2 yard = yards[id.x] + float2(width / 2 - 25, height / 2 - 25);
+        State[int2(yard)] = float4(0, 0, 1, 0);
+    }
+}
+
+#pragma kernel Copy
+
+[numthreads(8, 8, 1)]
+void Copy(uint3 id : SV_DispatchThreadID) {
+    if (OutOfBounds(id)) { return; }
+
+    State[id.xy] = CopyState[id.xy];
+}
+
+#pragma kernel Colours
+
+RWTexture2D<float4> Display;
+float4 colourA;
+float4 colourR;
+float4 colourB;
+float4 colourG;
+
+[numthreads(8, 8, 1)]
+void Colours(uint3 id : SV_DispatchThreadId) {
+    if (OutOfBounds(id)) { return; }
+
+    if (State[id.xy].x > 0.5) {
+        Display[id.xy] = colourR;
+    }
+    else if (State[id.xy].y > 0.5) {
+        Display[id.xy] = colourB;
+    }
+    else if (State[id.xy].z > 0.5) {
+        Display[id.xy] = colourG;
+    }
+    else {
+        Display[id.xy] = colourA;
+    }
+}
+
+#pragma kernel SetInitialChannel
+
+[numthreads(8, 8, 1)]
+void SetInitialChannel(uint3 id : SV_DispatchThreadId) {
+    if (OutOfBounds(id)) { return; }
+
+    State[id.xy] = float4(1, 0, 0, 0);
+}
+//
+//#pragma kernel Post
+//
+//float diffuseRate;
+//float decayRate;
+//
+//[numthreads(8,8,1)]
+//void Post(uint3 id : SV_DispatchThreadId) {
+//
+//    float4 sum = 0;
+//    float4 originalCol = TrailMap[id.xy];
+//
+//    // Blur
+//    for (int offsetX = -1; offsetX <= 1; offsetX++) {
+//        for (int offsetY = -1; offsetY <= 1; offsetY++) {
+//            int sampleX = min(width - 1, max(0, id.x + offsetX));
+//            int sampleY = min(height - 1, max(0, id.y + offsetY));
+//            sum += Display[int2(sampleX, sampleY)];
+//        }
+//    }
+//
+//    float4 blurredCol = sum / 9;
+//    float diffuseWeight = saturate(diffusionRate * deltaTime);
+//    blurredCol = originalCol * (1 - diffuseWeight) + (blurredCol * diffuseWeight);
+//
+//    //DiffusedTrailMap[id.xy] = blurredCol * saturate(1 - decayRate * deltaTime);
+//    DiffusedTrailMap[id.xy] = max(0, blurredCol - decayRate * deltaTime);
+//}
+

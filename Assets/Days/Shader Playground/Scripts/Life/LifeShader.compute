@@ -1,0 +1,246 @@
+#pragma kernel Update
+
+struct LifeRule
+{
+    int2 radiusMinMax;
+    float2 aliveMinMax;
+    float2 deadMinMax;
+};
+
+// Init
+RWStructuredBuffer<float2> actives;
+uint activesLength;
+
+// Sim settings
+RWTexture2D<float4> State;
+RWTexture2D<float4> CopyState;
+float width;
+float height;
+
+// Rng
+float deltaTime;
+float time;
+float2 noiseOffset;
+int frameCount;
+
+// Life Settings
+RWStructuredBuffer<LifeRule> rules;
+
+float innerRadius;
+float outerRadius;
+float activeAmount;
+float2 birthInterval; // b1, b2
+float2 deathInterval; // d1, d2
+float2 alphaStep;
+float changeRate;
+
+uint hash(uint state) {
+    state ^= 2747636419u;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    return state;
+}
+
+float hashf(float2 pos) {
+    float3 p3 = float3(pos.xy, 0);
+    p3 = frac(p3 * float3(0.1031, 0.1030, 0.0973));
+    p3 += dot(p3, p3.yxz + 33.33);
+    return frac((p3.xxy + p3.yxx) * p3.zyx).x;
+}
+
+float init(int2 id) {
+    float dstFromCentre = length(id.xy - int2(width, height) * 0.5);
+    return hashf(id.xy + int2(noiseOffset * width));
+}
+
+bool OutOfBounds(uint3 pos) {
+    if (pos.x < 0 || pos.x >= (uint)width || pos.y < 0 || pos.y >= (uint)height) {
+        return true;
+    }
+    return false;
+}
+
+float ScaleToRange01(uint state) {
+    return state / 4294967295.0;
+}
+
+uint2 WrapPos(uint2 coord) {
+    uint2 mapSize = uint2(width, height);
+    return (coord + mapSize) % mapSize;
+}
+
+float4 OuterRing(uint3 pos, LifeRule rule) {
+    int count = 0;
+    float4 sum = 0;
+    float AA = 1;
+
+    for (int i = -rule.radiusMinMax.y; i <= rule.radiusMinMax.y; i++) {
+        for (int j = -rule.radiusMinMax.y; j <= rule.radiusMinMax.y; j++) {
+            float dist = sqrt(i * i + j * j);
+            if (dist <= rule.radiusMinMax.x - AA || dist > rule.radiusMinMax.x + AA) { continue; }
+            int sampleX = pos.x + i;
+            int sampleY = pos.y + j;
+            int2 sampleXY = WrapPos(int2(sampleX, sampleY));
+
+            if (dist > rule.radiusMinMax.x + AA || dist < rule.radiusMinMax.y - AA) {
+                sum += State[sampleXY];
+            }
+            else if(dist < rule.radiusMinMax.x + AA){
+                sum += State[sampleXY] * (dist + AA - rule.radiusMinMax.x) / (2 * AA);
+            }
+            else if (dist > rule.radiusMinMax.y - AA) {
+                sum += State[sampleXY] * (dist + AA - rule.radiusMinMax.y) / (2 * AA);
+            }
+            count++;
+        }
+    }
+
+    return sum / count;
+}
+
+float4 InnerRing(uint3 pos) {
+
+    int count = 0;
+    float4 sum = 0;
+    float AA = 1;
+
+    for (int i = -innerRadius; i <= innerRadius; i++) {
+        for (int j = -innerRadius; j <= innerRadius; j++) {
+            float dist = sqrt(i * i + j * j);
+            if (dist > innerRadius + AA) { continue; }
+            int sampleX = pos.x + i;
+            int sampleY = pos.y + j;
+
+            int2 sampleXY = WrapPos(int2(sampleX, sampleY));
+
+            if (dist <= innerRadius - AA) {
+                sum += State[sampleXY];
+            }
+            else {
+                sum += State[sampleXY] * (dist + AA - innerRadius) / (2 * AA);
+            }
+            count++;
+        }
+    }
+    return sum / count;
+}
+
+float CalculateChannel(float innerRing, float outerRing) {
+    float sigma1m = 1 / (1 + exp(-4 * (innerRing - activeAmount) / alphaStep.x));
+
+    float sigmaM1 = birthInterval.x * (1 - sigma1m) + deathInterval.x * sigma1m;
+    float sigmaM2 = birthInterval.y * (1 - sigma1m) + deathInterval.y * sigma1m;
+
+    float sigma1na = 1 / (1 + exp(-4 * (outerRing - sigmaM1) / alphaStep.y));
+    float sigma1nb = 1 / (1 + exp(-4 * (outerRing - sigmaM2) / alphaStep.y));
+
+    float sigma2 = sigma1na * (1 - sigma1nb);
+
+    return sigma2;
+}
+
+[numthreads(8,8,1)]
+void Update (uint3 id : SV_DispatchThreadID)
+{
+    if (OutOfBounds(id)) {
+        return;
+    }
+
+    const int numSensors = 16;
+    const int numPotentialStates = numSensors / 2;
+    float dt = 0.048;
+
+    // Calculate Outer Ring data
+    float sensorData[numSensors];
+    for (int i = 0; i < numSensors; i++) {
+        sensorData[i] = OuterRing(id, rules[i]).x;
+    }
+
+    // Initialise potential states
+    float potentialStates[numPotentialStates];
+    for (i = 0; i < numPotentialStates; i++) {
+        potentialStates[i] = State[id.xy].x;
+    }
+
+    // Each 2 sensors is associated with a potential state
+    // State is increased/decreased depending on values & alive/dead conditions
+    for (i = 0; i < numSensors; i++) {
+        LifeRule rule = rules[i];
+        float sensorValue = sensorData[i];
+
+        if (sensorValue >= rule.aliveMinMax.x && sensorValue <= rule.aliveMinMax.y) {
+            potentialStates[i / 2u] += dt;
+        }
+        if (sensorValue >= rule.deadMinMax.x && sensorValue <= rule.deadMinMax.y) {
+            potentialStates[i / 2u] -= dt;
+        }
+    }
+
+    // blur potential state to be more like the two sensors associated with the potential state
+    for (i = 0; i < numPotentialStates; i++) {
+        float avgValInSensors = (sensorData[i * 2] + sensorData[i * 2 + 1]) * 0.5;
+        potentialStates[i] = (potentialStates[i] + avgValInSensors * dt) / (1 + dt);
+    }
+
+    // choose the state most different from previous state
+    float maxDelta = 0;
+    int selectedStateIndex = 0;
+
+    for (i = 0; i < numPotentialStates; i++) {
+        float delta = abs(State[id.xy].x - potentialStates[i]);
+        if (delta > maxDelta) {
+            maxDelta = delta;
+            selectedStateIndex = i;
+        }
+    }
+
+    float nextState = saturate(potentialStates[selectedStateIndex]);
+
+    if (frameCount == 0) {
+        nextState = init(id.xy);
+    }
+
+    CopyState[id.xy] = float4(nextState, 0, 0, 0);
+
+    ////int randomInt = hash(id.x + id.y * width + hash(id.x + time + 100000));
+
+    //// Calculate inner/outer rings
+    //float4 innerRing = InnerRing(id); // m
+    //float4 outerRing = OuterRing(id); // n
+
+    //// Compute new active/inactive states with smooth step functions
+    //float channel1sigma = CalculateChannel(innerRing.x, outerRing.x);
+    //float channel1 = min(1, max(0, State[id.xy].x + (channel1sigma * 2 - 1) * deltaTime * changeRate));
+    //CopyState[id.xy] = float4(channel1, 0, 0, 1);
+}
+
+# pragma kernel Init
+
+[numthreads(16,1,1)]
+void Init(uint3 id : SV_DispatchThreadID) {
+
+    if (id.x >= activesLength) {
+        return;
+    }
+
+    float2 active = actives[id.x];
+    State[int2(active)] = float4(1, 0, 0, 0);
+}
+
+#pragma kernel Colour
+
+RWTexture2D<float4> Display;
+float4 colourR;
+
+[numthreads(8,8,1)]
+void Colour(uint3 id : SV_DispatchThreadId) {
+    if (OutOfBounds(id)) { return; }
+
+    float4 colourSum = 0;
+    colourSum += State[id.xy].x * colourR;
+    Display[id.xy] = colourSum;
+}
+
