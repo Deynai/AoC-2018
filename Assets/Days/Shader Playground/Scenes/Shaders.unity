@@ -344,11 +344,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 810051542}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa884a59c6226184aad295cf4c2ae02a, type: 3}
+  m_Script: {fileID: 11500000, guid: cdf74e3341296ac4298b70987274a3c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _computeShader: {fileID: 7200000, guid: 4b10398feb14fa940977a41c633bbba0, type: 3}
-  settings: {fileID: 11400000, guid: 25ceb0d0adcb9b14cb4364aeb2376f45, type: 2}
+  _computeShader: {fileID: 7200000, guid: 9eb493944aa4dfc489da20ce1906928d, type: 3}
+  _plane: {fileID: 0}
+  settings: {fileID: 11400000, guid: 2c9ed73a083fe414095583c5bcc7ba81, type: 2}
+  filterMode: 0
+  format: 48
 --- !u!1 &812564307
 GameObject:
   m_ObjectHideFlags: 0

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "LifeSettings")]
+//[CreateAssetMenu(menuName = "LifeSettings")]
 public class LifeSettings : ScriptableObject
 {
 	[Header("Sim Settings")]

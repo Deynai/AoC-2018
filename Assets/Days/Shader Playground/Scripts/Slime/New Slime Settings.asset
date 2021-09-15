@@ -15,14 +15,19 @@ MonoBehaviour:
   stepsPerFrame: 30
   width: 1920
   height: 1080
-  numAgents: 50000
+  numAgents: 200
   spawnMode: 2
-  trailWeight: 0.2
-  decayRate: 0.0001
-  diffuseRate: 0.6
-  moveSpeed: 9
-  turnSpeed: 0.33
+  trailWeight: 1.3449904
+  decayRate: 0.001
+  diffuseRate: 0.05
+  moveSpeed: 3
+  turnSpeed: 1
   mirrorReflect: 0
-  sensorAngleSpacing: 30
-  sensorOffsetDistance: 12
-  sensorSize: 5
+  sensorAngleSpacing: 90
+  sensorOffsetDistance: 0
+  sensorSize: 3
+  colourR: {r: 0, g: 0.66784525, b: 1, a: 0}
+  colourOverlay: {r: 0, g: 0.020658553, b: 0.103773594, a: 1}
+  randomise: 0
+  fixedSeed: 1915728944
+  useFixedSeed: 0

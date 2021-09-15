@@ -26,4 +26,38 @@ public class SlimeSettings : ScriptableObject
     public float sensorAngleSpacing;
     public float sensorOffsetDistance;
     [Min(1)] public int sensorSize;
+
+    [Header("Colour Settings")]
+    public Color colourR;
+    public Color colourOverlay;
+
+    [Header("Random Generation Settings")]
+    public bool randomise;
+    public int fixedSeed;
+    public bool useFixedSeed;
+
+
+    public void RandomizeConditions(int seed)
+    {
+        System.Random prng = !useFixedSeed ? new System.Random(seed) : new System.Random(fixedSeed);
+        Debug.Log($"Seed: {seed}");
+
+        trailWeight = RandomRange(prng, 0.1f, 5f);
+        decayRate = RandomRange(prng, 0f, 0.2f);
+        diffuseRate = RandomRange(prng, 0f, 5f);
+        moveSpeed = RandomRange(prng, 1f, 10f);
+        turnSpeed = RandomRange(prng, 0f, 1.5f);
+        sensorAngleSpacing = RandomRange(prng, 0f, 270f);
+        sensorOffsetDistance = RandomRange(prng, 1f, 150f);
+        sensorSize = prng.Next(1, 9);
+    }
+
+    private float RandomRange(System.Random prng, float min, float max)
+    {
+        float scale = max - min;
+        float randomFloat = (float) prng.NextDouble();
+        randomFloat *= scale;
+        randomFloat += min;
+        return randomFloat;
+    }
 }

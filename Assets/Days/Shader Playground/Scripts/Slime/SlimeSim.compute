@@ -168,4 +168,20 @@ void DiffuseMap(uint3 id : SV_DispatchThreadID) {
 
 }
 
+#pragma kernel Colour
+
+RWTexture2D<float4> Display;
+float4 colourR;
+float4 colourOverlay;
+
+[numthreads(8, 8, 1)]
+void Colour(uint3 id : SV_DispatchThreadId) {
+    if (id.x >= (uint) width || id.y >= (uint) height) { return; }
+
+    float4 colourSum = 0;
+    colourSum += colourOverlay;
+    colourSum += DiffusedTrailMap[id.xy].x * colourR;
+    Display[id.xy] = colourSum;
+}
+
  

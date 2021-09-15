@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Tree/Yard Preset")]
+//[CreateAssetMenu(menuName = "Tree/Yard Preset")]
 public class TreeYardSettings : ScriptableObject {
     [Header("Sim Settings")]
     public int width = 960;

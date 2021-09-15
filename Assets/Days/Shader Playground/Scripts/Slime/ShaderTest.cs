@@ -12,6 +12,7 @@ public class ShaderTest : MonoBehaviour
     // Shader Kernels
     const int updateKernel = 0;
     const int diffuseMapKernel = 1;
+    const int colourKernel = 2;
 
     // Buffer
     ComputeBuffer buffer = null;
@@ -80,25 +81,36 @@ public class ShaderTest : MonoBehaviour
         }
 
         // Create and set buffer
-        int stride = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Agent));
-        buffer = new ComputeBuffer(agents.Length, stride);
-        buffer.SetData(agents);
-        _computeShader.SetBuffer(updateKernel, "agents", buffer);
+        ComputeHelper.CreateAndSetBuffer(ref buffer, agents, _computeShader, "agents", updateKernel);
+
+        if (settings.randomise)
+        {
+            RandomConditions();
+        }
 
         _computeShader.SetInt("numAgents", settings.numAgents);
         _computeShader.SetFloat("width", settings.width);
         _computeShader.SetFloat("height", settings.height);
 
-        _plane.transform.localScale = (new Vector3(settings.width, 0, settings.height)).normalized + Vector3.up;
-        _plane.GetComponent<MeshRenderer>().material.mainTexture = _renderTexture;
+        //_plane.transform.localScale = (new Vector3(settings.width, 0, settings.height)).normalized + Vector3.up;
+        //_plane.GetComponent<MeshRenderer>().material.mainTexture = _renderTexture;
     }
 
-    /*
+    private void ResetSim()
+    {
+        Initialise();
+    }
+
+    private void RandomConditions()
+    {
+        int rand = Random.Range(0, int.MaxValue);
+        settings.RandomizeConditions(rand);
+    }
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        Graphics.Blit(_renderTexture, destination);
+        Graphics.Blit(_displayTexture, destination);
     }
-    */
+    
 
     private void FixedUpdate()
     {
@@ -110,9 +122,9 @@ public class ShaderTest : MonoBehaviour
 
     void RunTick()
     {
-        _computeShader.SetTexture(updateKernel, "TrailMap", _renderTexture);
-        _computeShader.SetTexture(diffuseMapKernel, "TrailMap", _renderTexture);
-        _computeShader.SetTexture(diffuseMapKernel, "DiffusedTrailMap", _renderTextureDiffusion);
+        ComputeHelper.SetRenderTexture(_renderTexture, _computeShader, "TrailMap", diffuseMapKernel, updateKernel);
+        ComputeHelper.SetRenderTexture(_renderTextureDiffusion, _computeShader, "DiffusedTrailMap", diffuseMapKernel, colourKernel);
+        ComputeHelper.SetRenderTexture(_displayTexture, _computeShader, "Display", colourKernel);
 
         _computeShader.SetFloat("deltaTime", Time.deltaTime);
         _computeShader.SetFloat("time", Time.realtimeSinceStartup);
@@ -130,8 +142,12 @@ public class ShaderTest : MonoBehaviour
         _computeShader.SetFloat("sensorOffsetDistance", settings.sensorOffsetDistance);
         _computeShader.SetFloat("sensorSize", settings.sensorSize);
 
+        _computeShader.SetVector("colourR", settings.colourR);
+        _computeShader.SetVector("colourOverlay", settings.colourOverlay);
+
         ComputeHelper.Dispatch(_computeShader, settings.numAgents, 1, 1, kernelIndex: updateKernel);
         ComputeHelper.Dispatch(_computeShader, settings.width, settings.height, 1, kernelIndex: diffuseMapKernel);
+        ComputeHelper.Dispatch(_computeShader, settings.width, settings.height, 1, kernelIndex: colourKernel);
 
         ComputeHelper.CopyRenderTexture(_renderTextureDiffusion, _renderTexture);
     }
@@ -150,6 +166,25 @@ public class ShaderTest : MonoBehaviour
         {
             this.position = pos;
             this.angle = angle;
+        }
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown("space"))
+        {
+            //frameCount = 0;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            ResetSim();
+            //frameCount = 0;
+        }
+
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            RandomConditions();
         }
     }
 }

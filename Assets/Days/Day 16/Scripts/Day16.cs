@@ -10,7 +10,7 @@ public class Day16 : MonoBehaviour
     int[][][] intOps;
     int[][] endTest;
 
-    int[] opMapping = new int[16]; // maps op code to operation, i.e if 9 is muli() then opMapping[9] = 4
+    int[] opMapping = new int[16]; // maps op code to operation, i.e if 9 is muli() then opMapping[9] = 4 (3? -> 4th index)
 
     private void InitialiseInput()
     {
@@ -91,6 +91,8 @@ public class Day16 : MonoBehaviour
             Debug.Assert(group.candidates.Count == 1);
             opMapping[group.op] = group.candidates.First();
         }
+
+        print($"{string.Join(",", opMapping)}");
     }
 
     private void Part2()
